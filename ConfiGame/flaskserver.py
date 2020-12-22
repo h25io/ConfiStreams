@@ -35,7 +35,12 @@ def doTick():
     teammap = {}
     for key in red.scan_iter("POSITION:*"):
         userid = key.split(b':')[1].decode()
-        x, y, timestamp = red.get(key).split(b',')
+        xytime = red.get(key)
+        if xytime.count(b',') != 2:
+            x, y = xytime.split(b',')
+            timestamp = random.random()
+        else:
+            x, y, timestamp = red.get(key).split(b',')
         x = int(x)
         y = int(y)
         timestamp = float(timestamp)
@@ -93,11 +98,11 @@ def doTick():
                 if not (0<=xx+dx<GRID_SIZE and 0<=yy+dy<GRID_SIZE):
                     continue
                 imdata[xx+dx + GRID_SIZE * (yy+dy)] = (0, 0, 0)
-    for xx, yy in deadpositions:
+    '''for xx, yy in deadpositions:
         if not (0<=xx<GRID_SIZE and 0<=yy<GRID_SIZE):
             continue
         imdata[xx + GRID_SIZE * yy] = (255, 255, 255)
-
+    '''
     im.putdata(imdata)
     im.save('grid.png')
     im.save(f'grids/grid_{int(time.time())}.png')
