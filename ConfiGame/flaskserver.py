@@ -35,19 +35,21 @@ def doTick():
     teammap = {}
     for key in red.scan_iter("POSITION:*"):
         userid = key.split(b':')[1].decode()
-        x, y = map(int, red.get(key).split(b','))
-        red.set('PREVPOSITION:'+userid, f'{x},{y}')
+        x, y, timestamp = red.get(key).split(b',')
+        x = int(x)
+        y = int(y)
+        timestamp = float(timestamp)
         red.delete(key)
-        userpositions[(x,y)].append(userid)
+        userpositions[(x,y)].append((timestamp, userid))
         userteam = red.get('TEAM:'+userid).decode()
         teammap[userid] = userteam
 
-    deadpositions = []
     for pos in userpositions:
-        if len(userpositions[pos]) > 1:
-            deadpositions.append(pos)
-    for pos in deadpositions:
-        del userpositions[pos]
+        _, userid = sorted(userpositions[pos])[0]
+        x, y = pos
+        red.set('PREVPOSITION:'+userid, f'{x},{y}')
+
+    userpostions = [userid for _, userid in userpositions]
 
     usercolormap = {}
     for pos in userpositions:
@@ -84,7 +86,7 @@ def doTick():
             imdata.append(usercolormap[grid[y][x][0]])
             for userid in grid[y][x]:
                 score[userid] += 1
-    
+
     for xx, yy in userpositions:
         for dx in range(-1, 2):
             for dy in range(-1, 2):
@@ -99,7 +101,7 @@ def doTick():
     im.putdata(imdata)
     im.save('grid.png')
     im.save(f'grids/grid_{int(time.time())}.png')
-    
+
     king = None
     kingScore = -1
     for userid in score:
@@ -109,7 +111,7 @@ def doTick():
             kingScore = score[userid]
 
     red.set('KING', king)
-    
+
     for userid in score:
         userscore = int(red.get('SCORE:'+userid) or 0)
         userteam = teammap[userid]
@@ -130,7 +132,7 @@ def getking():
     hexcolor = '#'
     for j in range(3):
         hexcolor += hex(COLORMAP[kingteam][j])[2:].zfill(2)
-    
+
     return '''
 <html>
     <body>
@@ -160,6 +162,7 @@ def getprevioustick():
 
 @app.route('/setPosition')
 def setpos():
+    timestamp = time.time()
     args = request.args
     for arg in ('x', 'y', 'token'):
         if arg not in args:
@@ -175,10 +178,10 @@ def setpos():
         prevx, prevy = map(int, red.get('PREVPOSITION:'+userid).split(b','))
         if abs(x - prevx) + abs(y-prevy) > MAX_STEP:
             return f'You can only move at most {MAX_STEP} Manhattan distance from your previous tick position {prevx}, {prevy}, or wait a turn', status.HTTP_400_BAD_REQUEST
-    red.set('POSITION:'+userid, f'{x},{y}')
+    red.set('POSITION:'+userid, f'{x},{y},{timestamp}')
     print(f'Set position for user {userid} : {x},{y}')
     return 'OK'
-    
+
 @app.route('/image')
 def getImage():
     return send_file('grid.png', mimetype='image/png')
@@ -211,7 +214,7 @@ def getScoreboard():
 def root():
     return '''<html>
     <head>
-        
+
     </head>
     <body>
         <img src="/image" id="myImage"/>
