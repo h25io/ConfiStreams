@@ -45,15 +45,15 @@ def doTick():
         teammap[userid] = userteam
 
     for pos in userpositions:
-        _, userid = sorted(userpositions[pos])[0]
+        userpositions[pos].sort()
+        _, userid = userpositions[pos][0]
         x, y = pos
         red.set('PREVPOSITION:'+userid, f'{x},{y}')
-
-    userpostions = [userid for _, userid in userpositions]
+        userpostitions[pos] = userid
 
     usercolormap = {}
     for pos in userpositions:
-        userid = userpositions[pos][0]
+        userid = userpositions[pos]
         usercolor = []
         random.seed(userid)
         for i in range(3):
@@ -69,7 +69,7 @@ def doTick():
             bestusers = []
             bestdist = float('inf')
             for xx, yy in userpositions:
-                userid = userpositions[(xx,yy)][0]
+                userid = userpositions[(xx,yy)]
                 dist = (xx-x)**2 + (yy-y)**2
                 if dist < bestdist:
                     bestusers = [userid]
