@@ -49,7 +49,7 @@ def doTick():
         _, userid = userpositions[pos][0]
         x, y = pos
         red.set('PREVPOSITION:'+userid, f'{x},{y}')
-        userpostitions[pos] = userid
+        userpositions[pos] = userid
 
     usercolormap = {}
     for pos in userpositions:
